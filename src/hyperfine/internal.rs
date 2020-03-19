@@ -50,6 +50,7 @@ pub struct BenchmarkResultWithRelativeSpeed<'a> {
     pub result: &'a BenchmarkResult,
     pub relative_speed: Scalar,
     pub relative_speed_stddev: Scalar,
+    pub percent_change: Scalar,
     pub is_fastest: bool,
 }
 
@@ -69,6 +70,7 @@ pub fn compute_relative_speed<'a>(
         .iter()
         .map(|result| {
             let ratio = result.mean / fastest.mean;
+            let percent_change = 100.0 * (result.mean - fastest.mean) / result.mean;
 
             // https://en.wikipedia.org/wiki/Propagation_of_uncertainty#Example_formulas
             // Covariance asssumed to be 0, i.e. variables are assumed to be independent
@@ -80,6 +82,7 @@ pub fn compute_relative_speed<'a>(
                 result,
                 relative_speed: ratio,
                 relative_speed_stddev: ratio_stddev,
+                percent_change: percent_change,
                 is_fastest: result == fastest,
             }
         })
@@ -102,10 +105,11 @@ pub fn write_benchmark_comparison(results: &[BenchmarkResult]) {
 
     for item in others {
         println!(
-            "{} ± {} times faster than '{}'",
+            "{} ± {} times faster than '{}', -{}%",
             format!("{:8.2}", item.relative_speed).bold().green(),
             format!("{:.2}", item.relative_speed_stddev).green(),
-            &item.result.command.magenta()
+            &item.result.command.magenta(),
+            format!("{:.1}", item.percent_change).bold().green(),
         );
     }
 }
